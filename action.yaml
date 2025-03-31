@@ -3,27 +3,27 @@ description: 'Scan and Validate IAC Template'
 
 inputs:
   aws-role-arn:
-    description: Arn of the role to be assumed. (e.g., arn:aws:iam::111122223333:role/github-oidc-role)
+    description: "Arn of the role to be assumed. (e.g., arn:aws:iam::111122223333:role/github-oidc-role)"
     required: true
-    default: arn:aws:iam::111122223333:role/github-oidc-role
+    default: "arn:aws:iam::111122223333:role/github-oidc-role"
   aws-region:
-    description: AWS region where the services will be deployed (e.g., us-east-1)
+    description: "AWS region where the services will be deployed (e.g., us-east-1)"
     required: true
-    default: us-east-1
+    default: "us-east-1"
   template-dir:
-    description: The directory path of the IAC file.
+    description: "The directory path of the IAC file."
     required: true
     default: "."
   template-file:
-    description: The IAC template file name.
+    description: "The IAC template file name."
     required: true
     default: "root-stack-template.yaml"
   iac-framework:
-    description: IAC Framework - Accepted values: cloudformation, terraform, kubernetes, all
+    description: "IAC Framework - Accepted values: cloudformation, terraform, kubernetes, all"
     required: true
     default: "cloudformation"
   soft-fail:
-    description: If true, Checkov scan will not fail the pipeline
+    description: "If true, Checkov scan will not fail the pipeline"
     required: true
     default: true
   github-token:
