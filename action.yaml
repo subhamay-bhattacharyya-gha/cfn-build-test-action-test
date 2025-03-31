@@ -47,29 +47,37 @@ runs:
         aws-region: ${{ inputs.aws-region }}
         role-session-name: github-aws-cloudformation-oidc
 
-    - name: Debug Inputs
-      id: debug
-      shell: bash
-      run: |
-        echo " aws-role-arn    = ${{ inputs.aws-role-arn }}"
-        echo " aws-region      = ${{ inputs.aws-region }}"
-        echo " template-dir    = ${{ inputs.template-dir }}"
-        echo " template-file   = ${{ inputs.template-file }}"
-        echo " iac-framework   = ${{ inputs.iac-framework }}"
-        echo " soft-fail       = ${{ inputs.soft-fail }}"
-        echo "---------------------------------------------"
-        ls -lR
-        echo "---------------------------------------------"
-        pwd
-        echo "---------------------------------------------"
-        
-
     - name: Run CloudFormation Validate
       id: validate-cfn
       if: ${{ inputs.iac-framework == 'cloudformation' }}
       shell: bash
       run: |
-        aws cloudformation validate-template --template-body file://${{ github.workspace }}/${{ inputs.template-dir }}/${{ inputs.template-file }}
+        echo "Validating CloudFormation template..."
+    
+        # Run the validation, capture both stdout and stderr
+        VALIDATION_OUTPUT=$(aws cloudformation validate-template \
+          --template-body file://${{ github.workspace }}/${{ inputs.template-dir }}/${{ inputs.template-file }} 2>&1)
+        STATUS=$?
+    
+        echo "Raw output:"
+        echo "$VALIDATION_OUTPUT"
+    
+        # Check if the validation passed
+        if [ $STATUS -eq 0 ]; then
+          DESCRIPTION=$(echo "$VALIDATION_OUTPUT" | jq -r '.Description // "No description available"')
+          echo "Validation passed. Description: $DESCRIPTION"
+        else
+          DESCRIPTION="Validation failed"
+          echo "Validation failed. Output:"
+          echo "$VALIDATION_OUTPUT"
+        fi
+    
+        # Export outputs
+        echo "description=$DESCRIPTION" >> $GITHUB_OUTPUT
+        echo "raw_output=$VALIDATION_OUTPUT" >> $GITHUB_OUTPUT
+        echo "success=$([ $STATUS -eq 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+
 
     - name: Run Checkov Scan
       if: always()
