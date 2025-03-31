@@ -63,7 +63,7 @@ runs:
       if: ${{ inputs.iac-framework == 'cloudformation' }}
       shell: bash
       run: |
-        aws cloudformation validate-template --template-body file://${{ inputs.template-dir }}/${{ inputs.template-file }}
+        aws cloudformation validate-template --template-body file:/${{ inputs.template-dir }}${{ inputs.template-file }}
 
     # - name: Run Checkov Scan
     #   if: always()
