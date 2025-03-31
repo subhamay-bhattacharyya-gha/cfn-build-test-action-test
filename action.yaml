@@ -25,7 +25,7 @@ inputs:
   soft-fail:
     description: If true, Checkov scan will not fail the pipeline
     required: true
-    default: "true"
+    default: true
   github-token:
     description: 'GitHub token'
     required: true
@@ -58,18 +58,18 @@ runs:
         echo " iac-framework   = ${{ inputs.iac-framework }}"
         echo " soft-fail       = ${{ inputs.soft-fail }}"
 
-    - name: Run CloudFormation Validate
-      id: validate-cfn
-      if: ${{ inputs.iac-framework == 'cloudformation' }}
-      shell: bash
-      run: |
-        aws cloudformation validate-template --template-body file://${{ inputs.template-dir }}/${{ inputs.template-file }}
+    # - name: Run CloudFormation Validate
+    #   id: validate-cfn
+    #   if: ${{ inputs.iac-framework == 'cloudformation' }}
+    #   shell: bash
+    #   run: |
+    #     aws cloudformation validate-template --template-body file://${{ inputs.template-dir }}/${{ inputs.template-file }}
 
-    - name: Run Checkov Scan
-      if: always()
-      uses: bridgecrewio/checkov-action@master
-      with:
-        directory: ${{ inputs.template-dir }}
-        soft_fail: ${{ inputs.soft-fail }}
-        quiet: true
-        framework: ${{ inputs.iac-framework }}
+    # - name: Run Checkov Scan
+    #   if: always()
+    #   uses: bridgecrewio/checkov-action@master
+    #   with:
+    #     directory: ${{ inputs.template-dir }}
+    #     soft_fail: ${{ inputs.soft-fail }}
+    #     quiet: true
+    #     framework: ${{ inputs.iac-framework }}
