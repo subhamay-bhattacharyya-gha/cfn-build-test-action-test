@@ -57,6 +57,12 @@ runs:
         echo " template-file   = ${{ inputs.template-file }}"
         echo " iac-framework   = ${{ inputs.iac-framework }}"
         echo " soft-fail       = ${{ inputs.soft-fail }}"
+        echo "---------------------------------------------"
+        ls -lR
+        echo "---------------------------------------------"
+        pwd
+        echo "---------------------------------------------"
+        
 
     - name: Run CloudFormation Validate
       id: validate-cfn
