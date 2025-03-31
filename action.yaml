@@ -71,11 +71,11 @@ runs:
       run: |
         aws cloudformation validate-template --template-body file://${{ github.workspace }}/${{ inputs.template-dir }}/${{ inputs.template-file }}
 
-    # - name: Run Checkov Scan
-    #   if: always()
-    #   uses: bridgecrewio/checkov-action@master
-    #   with:
-    #     directory: ${{ inputs.template-dir }}
-    #     soft_fail: ${{ inputs.soft-fail }}
-    #     quiet: true
-    #     framework: ${{ inputs.iac-framework }}
+    - name: Run Checkov Scan
+      if: always()
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: ${{ github.workspace }}/${{ inputs.template-dir }}
+        soft_fail: ${{ inputs.soft-fail }}
+        quiet: true
+        framework: ${{ inputs.iac-framework }}
