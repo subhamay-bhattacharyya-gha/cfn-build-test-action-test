@@ -34,12 +34,14 @@ runs:
         role-session-name: github-aws-cloudformation-oidc
 
     - name: Debug - Check the available files
+      shell: bash
       run: |
         cd ${{ github.workspace }}
         ls -lR
         
     - name: Test AWS CLI
       id: test-aws-cli
+      shell: bash
       run: |
         aws s3 ls
 
