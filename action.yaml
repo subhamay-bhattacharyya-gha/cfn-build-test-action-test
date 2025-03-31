@@ -17,6 +17,11 @@ inputs:
     required: true
     default: "."
     type: string
+  template-file:
+    description: The IAC template file name.
+    required: true
+    default: "root-stack-template.yaml"
+    type: string
   iac-framework:
     description: IAC Framework - CloudFormation, Terraform, Kubernetes
     required: true
@@ -53,7 +58,26 @@ runs:
         aws-region: ${{ inputs.aws-region }}
         role-session-name: github-aws-cloudformation-oidc
 
+    - name: Debug
+      id: aws-config
+      shell: bash
+      run: |
+        echo " aws-role-arn    = ${{ inputs.aws-role-arn }}"
+        echo " aws-region      = ${{ inputs.aws-region }}"
+        echo " template-dir    = ${{ inputs.template-dir }}"
+        echo " template-file   = ${{ inputs.template-file }}"
+        echo " iac-framework   = ${{ inputs.iac-framework }}"
+        echo " soft-fail       = ${{ inputs.soft-fail }}"
+        
+    - name: Run CloudFormation Validate
+      id: test-aws-cli
+      if: ${{ inputs.iac-framework == "cloudformation" }}
+      shell: bash
+      run: |
+        aws cloudformation validate-template --template-body file://${{ inputs.template-dir }}/${{ inputs.template-file }}
+        
     - name: Run Checkov Scan
+      if: always()
       uses: bridgecrewio/checkov-action@master
       with:
         directory: ${{ inputs.template-dir }}
@@ -61,7 +85,7 @@ runs:
         # check: CKV_AWS_1 # optional: run only a specific check_id. can be comma separated list
         # skip_check: CKV_AWS_2 # optional: skip a specific check_id. can be comma separated list
         quiet: true # optional: display only failed checks
-        framework: terraform # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
+        framework: ${{ inputs.iac-framework }} # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
         # output_format: sarif # optional: the output format, one of: cli, json, junitxml, github_failed_only, or sarif. Default: sarif
         # download_external_modules: true # optional: download external terraform modules from public git repositories and terraform registry
         # log_level: DEBUG # optional: set log level. Default WARNING
@@ -69,26 +93,3 @@ runs:
         # baseline: cloudformation/.checkov.baseline # optional: Path to a generated baseline file. Will only report results not in the baseline.
         # container_user: 1000 # optional: Define what UID and / or what GID to run the container under to prevent permission issues
         
-    - name: Test AWS CLI
-      id: test-aws-cli
-      shell: bash
-      run: |
-        aws s3 ls
-
-    # - name: Configure OIDC      
-    #   shell: bash
-    #   env:
-    #     GITHUB_TOKEN: ${{ inputs.github-token }}
-    #   run: |
-    #     echo "Hello World !"
-        # ISSUE_NUMBER="${{ github.event.issue.number }}"
-        # REPO="${{ github.repository }}"
-        # OWNER=$(echo $REPO | cut -d'/' -f1)
-        # BRANCH_NAME="${{ steps.create-branch.outputs.branch-name }}"
-        # COMMENT_BODY="Branch [$BRANCH_NAME](https://github.com/$OWNER/$REPO/tree/$BRANCH_NAME) created 🚀"
-
-        # curl -s -X POST \
-        #   -H "Authorization: token $GITHUB_TOKEN" \
-        #   -H "Content-Type: application/json" \
-        #   -d "{\"body\": \"$COMMENT_BODY\"}" \
-        #   https://api.github.com/repos/$REPO/issues/$ISSUE_NUMBER/comments
