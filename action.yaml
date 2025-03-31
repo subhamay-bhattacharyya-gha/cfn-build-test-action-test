@@ -52,30 +52,51 @@ runs:
       if: ${{ inputs.iac-framework == 'cloudformation' }}
       shell: bash
       run: |
-        echo "Validating CloudFormation template..."
+        echo "Building structured request for CloudFormation validation..."
     
-        # Run the validation, capture both stdout and stderr
+        TEMPLATE_PATH="${{ github.workspace }}/${{ inputs.template-dir }}/${{ inputs.template-file }}"
+        echo "Template path: $TEMPLATE_PATH"
+    
+        # Create a JSON object to log or pass parameters (for extensibility)
+        INPUT_JSON=$(jq -n \
+          --arg body "file://$TEMPLATE_PATH" \
+          '{ "template-body": $body }'
+        )
+    
+        echo "Constructed input JSON:"
+        echo "$INPUT_JSON"
+    
+        # Extract the actual path from the JSON and run the validation
+        TEMPLATE_BODY=$(echo "$INPUT_JSON" | jq -r '."template-body"')
+    
+        echo "Running template validation..."
+    
         VALIDATION_OUTPUT=$(aws cloudformation validate-template \
-          --template-body file://${{ github.workspace }}/${{ inputs.template-dir }}/${{ inputs.template-file }} 2>&1)
+          --template-body "$TEMPLATE_BODY" 2>&1)
         STATUS=$?
     
         echo "Raw output:"
         echo "$VALIDATION_OUTPUT"
     
-        # Check if the validation passed
         if [ $STATUS -eq 0 ]; then
           DESCRIPTION=$(echo "$VALIDATION_OUTPUT" | jq -r '.Description // "No description available"')
           echo "Validation passed. Description: $DESCRIPTION"
         else
           DESCRIPTION="Validation failed"
-          echo "Validation failed. Output:"
-          echo "$VALIDATION_OUTPUT"
+          echo "Validation failed."
         fi
     
         # Export outputs
         echo "description=$DESCRIPTION" >> $GITHUB_OUTPUT
         echo "raw_output=$VALIDATION_OUTPUT" >> $GITHUB_OUTPUT
         echo "success=$([ $STATUS -eq 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
+    
+        # Optional: fail pipeline based on soft-fail input
+        if [ $STATUS -ne 0 ] && [ "${{ inputs.soft-fail }}" != "true" ]; then
+          echo "Template validation failed and soft-fail is disabled."
+          exit 1
+        fi
+
 
 
 
