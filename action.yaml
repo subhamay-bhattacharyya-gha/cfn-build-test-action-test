@@ -1,42 +1,31 @@
-name: 'Action Name'
-description: 'Action Description'
+name: 'Scan and Validate'
+description: 'Scan and Validate IAC Template'
 
 inputs:
   aws-role-arn:
-    description: Arn of the role to be assumed.
+    description: Arn of the role to be assumed. (e.g., arn:aws:iam::111122223333:role/github-oidc-role)
     required: true
     default: arn:aws:iam::111122223333:role/github-oidc-role
-    type: string
   aws-region:
-    description: AWS region where the services will be deployed
+    description: AWS region where the services will be deployed (e.g., us-east-1)
     required: true
     default: us-east-1
-    type: string
   template-dir:
     description: The directory path of the IAC file.
     required: true
     default: "."
-    type: string
   template-file:
     description: The IAC template file name.
     required: true
     default: "root-stack-template.yaml"
-    type: string
   iac-framework:
-    description: IAC Framework - CloudFormation, Terraform, Kubernetes
+    description: IAC Framework - Accepted values: cloudformation, terraform, kubernetes, all
     required: true
     default: "cloudformation"
-    type: choice
-    options:
-      - cloudformation
-      - terraform
-      - kubernetes
-      - all
   soft-fail:
-    description: Checkov Scan to fail the pipeline
+    description: If true, Checkov scan will not fail the pipeline
     required: true
-    type: boolean
-    default: true
+    default: "true"
   github-token:
     description: 'GitHub token'
     required: true
@@ -58,8 +47,8 @@ runs:
         aws-region: ${{ inputs.aws-region }}
         role-session-name: github-aws-cloudformation-oidc
 
-    - name: Debug
-      id: aws-config
+    - name: Debug Inputs
+      id: debug
       shell: bash
       run: |
         echo " aws-role-arn    = ${{ inputs.aws-role-arn }}"
@@ -68,28 +57,19 @@ runs:
         echo " template-file   = ${{ inputs.template-file }}"
         echo " iac-framework   = ${{ inputs.iac-framework }}"
         echo " soft-fail       = ${{ inputs.soft-fail }}"
-        
+
     - name: Run CloudFormation Validate
-      id: test-aws-cli
-      if: ${{ inputs.iac-framework == "cloudformation" }}
+      id: validate-cfn
+      if: ${{ inputs.iac-framework == 'cloudformation' }}
       shell: bash
       run: |
         aws cloudformation validate-template --template-body file://${{ inputs.template-dir }}/${{ inputs.template-file }}
-        
+
     - name: Run Checkov Scan
       if: always()
       uses: bridgecrewio/checkov-action@master
       with:
         directory: ${{ inputs.template-dir }}
-        soft_fail: ${{ inputs.soft-fail }} # optional: do not return an error code if there are failed checks
-        # check: CKV_AWS_1 # optional: run only a specific check_id. can be comma separated list
-        # skip_check: CKV_AWS_2 # optional: skip a specific check_id. can be comma separated list
-        quiet: true # optional: display only failed checks
-        framework: ${{ inputs.iac-framework }} # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
-        # output_format: sarif # optional: the output format, one of: cli, json, junitxml, github_failed_only, or sarif. Default: sarif
-        # download_external_modules: true # optional: download external terraform modules from public git repositories and terraform registry
-        # log_level: DEBUG # optional: set log level. Default WARNING
-        # config_file: path/this_file
-        # baseline: cloudformation/.checkov.baseline # optional: Path to a generated baseline file. Will only report results not in the baseline.
-        # container_user: 1000 # optional: Define what UID and / or what GID to run the container under to prevent permission issues
-        
+        soft_fail: ${{ inputs.soft-fail }}
+        quiet: true
+        framework: ${{ inputs.iac-framework }}
