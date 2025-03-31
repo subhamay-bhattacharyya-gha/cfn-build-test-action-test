@@ -2,18 +2,16 @@ name: 'Action Name'
 description: 'Action Description'
 
 inputs:
-  # input-1:
-  #   description: Input description.
-  #   required: false
-  #   default: default-value
-  # input-2:
-  #   description: Input description.
-  #   required: false
-  #   default: default-value
-  # input-3:
-  #   description: Input description.
-  #   required: false
-  #   default: default-value
+  aws-role-arn:
+    description: Arn of the role to be assumed.
+    required: true
+    default: arn:aws:iam::111122223333:role/github-oidc-role
+    type: string
+  aws-region:
+    description: AWS region where the services will be deployed
+    required: true
+    default: us-east-1
+    type: string
   github-token:
     description: 'GitHub token'
     required: true
@@ -24,13 +22,23 @@ runs:
     - name: Checkout repository
       id: checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-    - name: Say Hello      
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
-      run: |
-        echo "Hello World !"
+    - name: Configure AWS credentials from AWS account
+      id: aws-config
+      uses: aws-actions/configure-aws-credentials@v4.0.2
+      with:
+        role-to-assume: ${{ inputs.aws-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+        role-session-name: github-aws-cloudformation-oidc
+
+    # - name: Configure OIDC      
+    #   shell: bash
+    #   env:
+    #     GITHUB_TOKEN: ${{ inputs.github-token }}
+    #   run: |
+    #     echo "Hello World !"
         # ISSUE_NUMBER="${{ github.event.issue.number }}"
         # REPO="${{ github.repository }}"
         # OWNER=$(echo $REPO | cut -d'/' -f1)
