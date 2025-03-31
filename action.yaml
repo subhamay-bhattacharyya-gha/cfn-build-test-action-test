@@ -58,12 +58,12 @@ runs:
         echo " iac-framework   = ${{ inputs.iac-framework }}"
         echo " soft-fail       = ${{ inputs.soft-fail }}"
 
-    # - name: Run CloudFormation Validate
-    #   id: validate-cfn
-    #   if: ${{ inputs.iac-framework == 'cloudformation' }}
-    #   shell: bash
-    #   run: |
-    #     aws cloudformation validate-template --template-body file://${{ inputs.template-dir }}/${{ inputs.template-file }}
+    - name: Run CloudFormation Validate
+      id: validate-cfn
+      if: ${{ inputs.iac-framework == 'cloudformation' }}
+      shell: bash
+      run: |
+        aws cloudformation validate-template --template-body file://${{ inputs.template-dir }}/${{ inputs.template-file }}
 
     # - name: Run Checkov Scan
     #   if: always()
