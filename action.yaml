@@ -97,9 +97,6 @@ runs:
           exit 1
         fi
 
-
-
-
     - name: Run Checkov Scan
       if: always()
       uses: bridgecrewio/checkov-action@master
