@@ -56,6 +56,7 @@ runs:
 
     - name: Validate CloudFormation Template
       id: validate-template
+      shell: bash
       run: |
         set +e
         cd ${{ github.workspace }}/${{ inputs.template-dir }}
