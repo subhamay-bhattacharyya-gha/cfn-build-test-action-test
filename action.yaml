@@ -29,6 +29,13 @@ inputs:
   github-token:
     description: 'GitHub token'
     required: true
+outputs:
+  valid-template:
+    description: 'Specifies if the template is valid'
+    value: ${{ steps.validate-template.outputs.valid-template }}
+  validation-error:
+    description: 'Validation Error'
+    value: ${{ steps.validate-template.outputs.validation-error }}
 
 runs:
   using: 'composite'
@@ -47,58 +54,27 @@ runs:
         aws-region: ${{ inputs.aws-region }}
         role-session-name: github-aws-cloudformation-oidc
 
-    - name: Run CloudFormation Validate
-      id: validate-cfn
-      if: ${{ inputs.iac-framework == 'cloudformation' }}
-      shell: bash
+    - name: Validate CloudFormation Template
+      id: validate-template
       run: |
-        echo "Building structured request for CloudFormation validation..."
-    
-        TEMPLATE_PATH="${{ github.workspace }}/${{ inputs.template-dir }}/${{ inputs.template-file }}"
-        echo "Template path: $TEMPLATE_PATH"
-    
-        # Create a JSON object to log or pass parameters (for extensibility)
-        INPUT_JSON=$(jq -n \
-          --arg body "file://$TEMPLATE_PATH" \
-          '{ "template-body": $body }'
-        )
-    
-        echo "Constructed input JSON:"
-        echo "$INPUT_JSON"
-    
-        # Extract the actual path from the JSON and run the validation
-        TEMPLATE_BODY=$(echo "$INPUT_JSON" | jq -r '."template-body"')
-    
-        echo "Running template validation..."
-    
-        VALIDATION_OUTPUT=$(aws cloudformation validate-template \
-          --template-body "$TEMPLATE_BODY" 2>&1)
+        set +e
+        OUTPUT=$(aws cloudformation validate-template --template-body file://template.yaml 2>&1)
         STATUS=$?
-    
-        echo "Raw output:"
-        echo "$VALIDATION_OUTPUT"
+        set -e
     
         if [ $STATUS -eq 0 ]; then
-          DESCRIPTION=$(echo "$VALIDATION_OUTPUT" | jq -r '.Description // "No description available"')
-          echo "Validation passed. Description: $DESCRIPTION"
+          echo "✅ CloudFormation template is valid."
+          echo "valid-template=true" >> $GITHUB_OUTPUT
+          echo "validation-error=''" >> $GITHUB_OUTPUT
+          
         else
-          DESCRIPTION="Validation failed"
-          echo "Validation failed."
-        fi
-    
-        # Export outputs
-        echo "description=$DESCRIPTION" >> $GITHUB_OUTPUT
-        echo "raw_output=$VALIDATION_OUTPUT" >> $GITHUB_OUTPUT
-        echo "success=$([ $STATUS -eq 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
-    
-        # Optional: fail pipeline based on soft-fail input
-        if [ $STATUS -ne 0 ] && [ "${{ inputs.soft-fail }}" != "true" ]; then
-          echo "Template validation failed and soft-fail is disabled."
-          exit 1
+          echo "❌ CloudFormation template is invalid."
+          echo "valid-template=false" >> $GITHUB_OUTPUT
+          echo "validation-error=$OUTPUT" >> $GITHUB_OUTPUT
         fi
 
     - name: Run Checkov Scan
-      if: always()
+      if: ${{ steps.validate-template.valid-template == 'true' }}
       uses: bridgecrewio/checkov-action@master
       with:
         directory: ${{ github.workspace }}/${{ inputs.template-dir }}
