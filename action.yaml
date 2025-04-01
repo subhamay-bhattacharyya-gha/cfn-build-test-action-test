@@ -56,10 +56,10 @@ runs:
 
     - name: Validate CloudFormation Template
       id: validate-template
-      shell: bash
       run: |
         set +e
-        OUTPUT=$(aws cloudformation validate-template --template-body file://template.yaml 2>&1)
+        cd ${{ github.workspace }}/${{ inputs.template-dir }}
+        OUTPUT=$(aws cloudformation validate-template --template-body file://${{ inputs.template-file }} 2>&1)
         STATUS=$?
         set -e
     
